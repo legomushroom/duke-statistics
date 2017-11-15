@@ -1,0 +1,64 @@
+---
+title: "Statistical inference with the GSS data"
+output: 
+  html_document: 
+    fig_height: 4
+    highlight: pygments
+    theme: spacelab
+---
+
+## Setup
+
+### Load packages
+
+```{r load-packages, message = FALSE}
+library(ggplot2)
+library(dplyr)
+library(statsr)
+```
+
+### Load data
+
+Make sure your data and R Markdown files are in the same directory. When loaded
+your data file will be called `gss`. Delete this note when before you submit 
+your work. 
+
+```{r load-data}
+load("gss.Rdata")
+```
+
+* * *
+
+## Part 1: Data
+
+  The data set represents an observational study - national sample gathered thru face-to-face interviews about 1.5 hours long. Each survey prior to 2004 was an independently drawn sample of English-speaking persons 18 y.o. or over, living in non-institutional arrangements within the United States. Starting in 2006 Spanish-speakers were added to the target population. Block quota sampling  and full probability sampling were employed in surveys of different years.
+  The sample is a multi-stage area probability sample to the block or segment level. At the block level, however, quota sampling is used with quotas based on sex, age, and employment status.
+  The Primary Sampling Units (PSUs) employed are Standard Metropolitan Statistical Areas (SMSAs) or non-metropolitan
+counties selected in NORC's Master Sample. These SMSAs and counties were stratified by region, age, and race before selection.
+  The chance of non-response bias was considered, so the interviewers are given instructions to canvass and interview only after 3:00 p.m. on weekdays or during the weekend or holidays. This type of sample design is most appropriate when the past experience and judgment of a project director suggest that sample biases are likely to be small relative to the precision of the measuring instrument and the decisions that are to be made.
+  In addition to that, the `weighting` methods were applied, the GSS contains several weight variables (ADULTS, OVERSAMP, FORMWT, WTSSNR, WTSSALL) that users should use as needed as well as weight-related variables (ISSP+PHASE).
+  Taking in the considereation all of the above (random sampling/clustering, blocking, stratifying, weighting, multi-stage probability sample, the bias encounting) we can state that the study is generalizable to the english- and spanish-speaking population of the US over 18 y.o. Because of the observational nature of the study, no random assigmnet was done so we can not conclude causality.
+
+* * *
+
+## Part 2: Research question
+
+Does there appear to be a relationship between time spent in front of TV and job satisfaction level?
+
+The question is of interest for author because he is interested in exploring how TV might potentually affect the other aspects of person's life. To be clear we are not talking about causation here as it is not possible to infer causation in the current study settings, but rather finding clues for understanding if further analysis worths to be invested into.
+
+* * *
+
+## Part 3: Exploratory data analysis
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
+
+* * *
+
+## Part 4: Inference
+
+NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
+button (green button with orange arrow) above. Make sure that your code is visible
+in the project you submit. Delete this note when before you submit your work.
