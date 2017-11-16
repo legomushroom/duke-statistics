@@ -51,9 +51,78 @@ The question is of interest for author because he is interested in exploring how
 
 ## Part 3: Exploratory data analysis
 
-NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
-button (green button with orange arrow) above. Make sure that your code is visible
-in the project you submit. Delete this note when before you submit your work.
+Let's start with analyzing the hours spent in front of TV. Using samaries statistics and visualization, let's describe the distribution of TV hours:
+
+```{r}
+summary(gss$tvhours)
+```
+
+From the summary statistics we can see that the distribution is slightly right-skewed (because the `median` is smaller than the `mean`), alos we can witness that there is a natural boundery around `0` because watching negative number of hours does not make sense, hence we have the boundery at 0 with a long tail up to 24 hours period.
+
+Let's visualize the data:
+
+```{r}
+ggplot(gss, aes(x = tvhours)) + geom_histogram(binwidth = 1)
+```
+The visualization conforms with our assumtions over moderate right skewness of the data. Now, for the sake of convinience, let's shrink number of the levels the variable has from 24 to 7:
+
+
+```{r}
+
+tvData <- gss %>% filter(!is.na(tvhours))
+
+tvData <- tvData %>% mutate(tvhours7 = ifelse(tvhours == 0, '0 not watching',
+                                              ifelse(tvhours >= 1 & tvhours <= 2, '1 some time',
+                                                     ifelse(tvhours >= 3 & tvhours <= 4, '2 watching',
+                                                        ifelse(tvhours >= 5 & tvhours <= 8, '3 watching a lot',
+                                                            ifelse(tvhours >= 9 & tvhours <= 24, '4 all time', 'error')
+                                                     )
+                                              )
+                                      )
+                            )
+)
+
+tvData %>% group_by(tvhours7) %>% summarize(n = n())
+```
+
+As we can see we now have a ordinal categorical variable with 4 levels.
+
+Let's explore the second variable in the same fashion, since the observations that have `NA` for TV hours spent are useless for our study, we will use the `tvData` data which we have ahd recently created. We will explore the `satjob` variable:
+
+```{r}
+summary(tvData$satjob)
+```
+We can see that this is an ordinal categorical variable with `4` levels. A lot of observations have `NA` values, since they are not helpful for our needs let's just filter them out:
+
+```{r}
+tvData <- tvData %>% filter(!is.na(satjob))
+
+summary(tvData$satjob)
+```
+Now let's see the distributions of the categories:
+
+```{r}
+ggplot(tvData, aes(x = satjob)) + geom_bar()
+```
+We can see that the most people are satisfied with their jobs, the people that are dissatified with their jobs take less than 1/4 of the observations.
+
+
+Now let's see the two variables on one scale, first let's build a `contingency table`:
+
+```{r}
+table(tvData$satjob, tvData$tvhours7)
+```
+
+At the first glimpse we see that the data varies across the categories, let's build a stardintized barplot to try to catch the different in the categories proportions:
+
+```{r}
+ggplot(data = tvData, aes(x = satjob, fill = tvhours7)) + geom_bar(position = "fill") +
+  labs(title="Proportions who watch TV:") +
+  xlab("job satisfaction") +
+  ylab("amont of time spent in front of TV") +
+  scale_fill_discrete(name = "How much TV is seen")
+```
+As we can see from the standartized barplot for levels proportions, the people who spend `some time` in front of TV are also are most satified with their jobs. The opposite relation could be spotted for the `all time` category, as the proportions of people who watches TV `all time` (9+ hours per day) seem to be growing for dissatisfied by job proportion of people. So our prior assumtion about the relation between the categories holds, so we can invest further into statistical inference methods to understand if this data provide a statisticly significant evidence that for the relation cbetween the categories.
 
 * * *
 
