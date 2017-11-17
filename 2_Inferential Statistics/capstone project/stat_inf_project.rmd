@@ -106,28 +106,123 @@ ggplot(tvData, aes(x = satjob)) + geom_bar()
 ```
 We can see that the most people are satisfied with their jobs, the people that are dissatified with their jobs take less than 1/4 of the observations.
 
+Let's transform the data to have only two levels of satisfaction for the convinience sake:
+
+```{r}
+tvData <- tvData %>% mutate(satjob2 = ifelse(satjob == 'Very Satisfied' | satjob == 'Mod. Satisfied', 'Satisfied', 'Not satisfied'))
+
+tvData %>% group_by(satjob2) %>% summarize(n = n())
+```
+
 
 Now let's see the two variables on one scale, first let's build a `contingency table`:
 
 ```{r}
-table(tvData$satjob, tvData$tvhours7)
+contincency <- table(tvData$satjob2, tvData$tvhours7)
+contincency <- addmargins(contincency, 1)
+contincency <- addmargins(contincency, 2)
+print(contincency)
 ```
 
 At the first glimpse we see that the data varies across the categories, let's build a stardintized barplot to try to catch the different in the categories proportions:
 
 ```{r}
-ggplot(data = tvData, aes(x = satjob, fill = tvhours7)) + geom_bar(position = "fill") +
+ggplot(data = tvData, aes(x = satjob2, fill = tvhours7)) + geom_bar(position = "fill") +
   labs(title="Proportions who watch TV:") +
   xlab("job satisfaction") +
   ylab("amont of time spent in front of TV") +
-  scale_fill_discrete(name = "How much TV is seen")
+  scale_fill_discrete(name = "How much TV is watching")
 ```
-As we can see from the standartized barplot for levels proportions, the people who spend `some time` in front of TV are also are most satified with their jobs. The opposite relation could be spotted for the `all time` category, as the proportions of people who watches TV `all time` (9+ hours per day) seem to be growing for dissatisfied by job proportion of people. So our prior assumtion about the relation between the categories holds, so we can invest further into statistical inference methods to understand if this data provide a statisticly significant evidence that for the relation cbetween the categories.
+As we can see from the standartized barplot for levels proportions, the levels of `1 some time` and `3 watching a lot` have the most variation among the satisfaction levels. For the `1 some time` it is somewhat larger for the `Satisfied` level and is larger, at the same time the proportion of `3 watching a lot` is smaller for the `Satisfied` level and larger for the `Not satisfied` level. So our prior assumtion about the relation between the categories overall holds, so we can invest further into statistical inference methods to understand if this data provide a `statisticly significant` evidence that for the relation between the categories.
 
 * * *
 
 ## Part 4: Inference
 
-NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
-button (green button with orange arrow) above. Make sure that your code is visible
-in the project you submit. Delete this note when before you submit your work.
+Let's do the inference, as we remember from the original research questions, we are intereseted if there appear to be a relationship between time spent in front of TV and job satisfaction level? Just finding a difference among the levels(and not knowing which levels exactly are different) is sufficient for our needs hence we can pick the `Chi-square independence` test to proceed. The test commonly used to determine whether there is a significant association between some two variables - exactly what we need here.
+
+### First, let's state out hypotheses.
+
+H0: Amount of TV watched per day and job satisfaction are independent, TV watching time habits job do not vary by job satisfaction.
+
+Ha: Amount of TV watched per day and job satisfacgtion are dependen, TV watching time habits do vary by job satisfaction.
+
+The `chi-square test of independence` in the nushell is:
+
+- quantify how different the observed counts are from the expected counts
+- large deviations from what would be expected on sampling variation(chance) alone provide strong evidence for the alternative hypothesis
+- called independence test since we evaluate relationship between two categorical variables
+
+### Now, let's check the conditions needed for the chi-square test of independence
+
+1. Independence
+  - random sample - the randomsampling techniques applied while data collected (random sampling/clustering, stratifying,multi-stage probability sampling, see Part1 fro more details)
+  - sampling without replacement, and sample size of 57061 is much smaller than 10% of the entire population
+  - each case contributes only to one cell in the contingency table - there is no human can watch tv 2 hours and 0 hours per day on average simultaneously, same for the job satisfaction levels as they are mutually exclusive too.
+2. Sample size/skew
+  - at least 5 expected cases for each cell
+  
+To test the last `condition` (at least 5 expected cases for each cell) let's estimate the number of expected counts for each cell of the contincency table, as we remember, the folmular is `((total # in column) * (total # in row)) / (total #)`
+
+
+```{r}
+
+nRows <- nrow(contincency)
+nColumns <- ncol(contincency)
+total <- contincency[nRows, nColumns]
+
+contincencyExpected <- contincency[1:nRows, 1:nColumns]
+
+for (i in 1:(nRows-1)) {
+  for (j in 1:(nColumns-1)) {
+    cell <- contincency[i, j]
+    rowTotal = contincency[nRows, j]
+    columnTotal = contincency[i, nColumns]
+    contincencyExpected[i, j] <- round((rowTotal * columnTotal) / total)
+  }
+}
+
+print(contincency)
+print(contincencyExpected)
+```
+Having the `observed` and `expected` tables allows us to calculate the `Xsqaured` score, the formular is:
+
+```{}
+Xsquared = Sum( (O[i] - E[i])^2 / E[i] )
+df = (# of rows - 1) * (# of columns - 1)
+```
+
+Let's calculate the values:
+
+```{r}
+df = ((nRows - 1) - 1) * ((nColumns - 1) - 1)
+
+XSquared = 0
+for (i in 1:(nRows-1)) {
+  for (j in 1:(nColumns-1)) {
+    cellO <- contincency[i, j]
+    cellE <- contincencyExpected[i, j]
+    XSquared = XSquared + (((cellO - cellE)^2) / cellE)
+  }
+}
+
+print(df)
+print(XSquared)
+```
+
+Finally we can calculate the `p-value`:
+
+```{r}
+p <- pchisq(XSquared, df = df, lower.tail = FALSE)
+print(p)
+```
+
+With such a small `p-value` we will `reject the null-hypothesis` and conclude that the data provides significant evidence that indeed there is a relation between TV watching time habits and job satisfaction variables.
+
+As a sanity check, let's leverage the `inference` function and see if gives us the same results, for that we will use the `chisq.test` function and pass new contingency table without margins into it:
+
+```{r}
+chisq.test(table(tvData$satjob2, tvData$tvhours7))
+```
+
+As we can see the test statistics and all other parameters are almost equal to what we had, so it converged to the same results.
