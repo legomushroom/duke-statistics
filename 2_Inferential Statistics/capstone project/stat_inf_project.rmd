@@ -217,7 +217,7 @@ p <- pchisq(XSquared, df = df, lower.tail = FALSE)
 print(p)
 ```
 
-With such a small `p-value` we will `reject the null-hypothesis` and conclude that the data provides significant evidence that indeed there is a relation between TV watching time habits and job satisfaction variables.
+With such a small `p-value` we will `reject the null-hypothesis` and conclude that the data provides significant evidence that indeed the TV watching time habits and job satisfaction are associated. 
 
 As a sanity check, let's leverage the `inference` function and see if gives us the same results, for that we will use the `chisq.test` function and pass new contingency table without margins into it:
 
@@ -225,4 +225,10 @@ As a sanity check, let's leverage the `inference` function and see if gives us t
 chisq.test(table(tvData$satjob2, tvData$tvhours7))
 ```
 
-As we can see the test statistics and all other parameters are almost equal to what we had, so it converged to the same results.
+As we can see the test statistics and all other parameters are almost equal to what we had, so it converged to the same results. Remember that this is an observational study so no causial relation can be inferred based on this, we can only say about the variables relation here.
+
+To uderstand the actuall differences about to levels we can compare each TV watching time level by job satisfaction with other, reulsting in `(k * (k - 1)) / 2` total comparations:
+
+
+
+
