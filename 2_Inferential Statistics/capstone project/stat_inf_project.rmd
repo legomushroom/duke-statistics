@@ -227,8 +227,81 @@ chisq.test(table(tvData$satjob2, tvData$tvhours7))
 
 As we can see the test statistics and all other parameters are almost equal to what we had, so it converged to the same results. Remember that this is an observational study so no causial relation can be inferred based on this, we can only say about the variables relation here.
 
-To uderstand the actuall differences about to levels we can compare each TV watching time level by job satisfaction with other, reulsting in `(k * (k - 1)) / 2` total comparations:
+To uderstand the actuall differences about to levels we can compare each TV watching time level by job satisfaction with other, reulsting in `(k * (k - 1)) / 2` total comparations. But first we will need to check all the condition needed for the inference over two categorical variables (same for each pair):
 
+1. Independence
+  - Whithin groups
+    - random sampling indeed
+    - sampling without replacing, < 10% of entire population
+  - Between groups - the observations are independent between gropus - we assume that the TV watching habits and job satisfaction is independent among the people in the sample
+2. Sample size/skew (we will have to check it further upon computation):
+  - `n1*p1 >= 10 and n1 * (1 - p1) >= 10`
+  - `n2*p2 >= 10 and n2 * (1 - p2) >= 10`
 
+We will need to create the confidence intervals for the difference of two proportions, followed up with the hypothesis testing to see if the methods agree:
 
+For each groups comparations we will have the same Hypotheses:
 
+H0: p1 = p2 # the true poppulation parameter is the same among groups
+Ha: p1 != p2 # the true poppulation parameter is NOT the same among groups
+
+So let's write a function that will take the contingency table and two indecies, and to the inference for us:
+
+```{r}
+contingency = table(tvData$satjob2, tvData$tvhours7)
+print(contingency)
+
+compareTwoProportions = function(contingencyTable, i1, i2) {
+  writeLines("\n-=-=-=-=-=-=-=-=-=-=-=-")
+  columnNames = colnames(contingencyTable)
+  cat("Comparing to proporiotns: '", columnNames[i1], "' and '",  columnNames[i2], "' ", sep = "")
+  # get the columns
+  column1 = contingencyTable[1:2, i1]
+  column2 = contingencyTable[1:2, i2]
+  
+  col1 = as.vector(column1)
+  col2 = as.vector(column2)
+  # first, let's compute the proportions for the observed data
+  total1 = sum(col1[1:length(col1)])
+  total2 = sum(col2[1:length(col2)])
+  phat1 = col1[length(col1)] / total1
+  phat2 = col2[length(col2)] / total2
+  # check the # of observations conditions
+  condition1 = (total1 * phat1 < 10) | (total1 * (1 - phat1) < 10)
+  condition2 = (total2 * phat2 < 10) | (total2 * (1 - phat2) < 10)
+  if (condition1 | condition2) {
+    return(print("no # of observations condition is met"))
+  }
+  
+  # calculate SE
+  SE = sqrt( ((phat1 * (1 - phat1)) / total1) + ((phat2 * (1 - phat2)) / total2))
+  
+  # 95% CI
+  Z  = 1.96
+  ME = (Z * SE)
+  CIlower = (phat1 - phat2) - ME
+  CIupper = (phat1 - phat2) + ME
+  
+  if ((CIlower > 0 & CIupper > 0) | (CIlower < 0 & CIupper < 0)) {
+    cat("\n✔ Statisticly sighnificant difference in proportions: ", "we'd reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", sep = "" )
+  } else {
+    cat("\n⊗ Not a statisticly sighnificant difference in proportions: ", "we'd not reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", sep = "" )
+  }
+  
+  
+  
+  # p value calculations
+}
+
+# loop thru all pairs and gen CI and p-value
+nColumns <- ncol(contincency)
+k = 1
+for (i in k:(nColumns-2)) {
+  for (j in (k+1):(nColumns-1)) {
+    #cat("\ni: ", i, " j: ", j, sep="")
+    compareTwoProportions(contingency, i, j)
+  }
+  k = k + 1
+}
+
+```
