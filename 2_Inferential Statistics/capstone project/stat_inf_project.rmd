@@ -270,7 +270,7 @@ compareTwoProportions = function(contingencyTable, i1, i2) {
   condition1 = (total1 * phat1 < 10) | (total1 * (1 - phat1) < 10)
   condition2 = (total2 * phat2 < 10) | (total2 * (1 - phat2) < 10)
   if (condition1 | condition2) {
-    return(print("no # of observations condition is met"))
+    return(print("# of observations condition is met"))
   }
   
   # calculate SE
@@ -283,14 +283,30 @@ compareTwoProportions = function(contingencyTable, i1, i2) {
   CIupper = (phat1 - phat2) + ME
   
   if ((CIlower > 0 & CIupper > 0) | (CIlower < 0 & CIupper < 0)) {
-    cat("\n✔ Statisticly sighnificant difference in proportions: ", "we'd reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", sep = "" )
+    cat("\n✔ Statisticly sighnificant difference in proportions: ", "we'd reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", " SE: ", SE, sep = "" )
   } else {
-    cat("\n⊗ Not a statisticly sighnificant difference in proportions: ", "we'd not reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", sep = "" )
+    cat("\n⊗ Not a statisticly sighnificant difference in proportions: ", "we'd not reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", " SE: ", SE, sep = "" )
   }
   
-  
-  
   # p value calculations
+  phat_pool = sum(contingencyTable[2, 1:(ncol(contincency)-1)]) / sum(contingencyTable)
+  
+  # check the # of observations conditions
+  condition1 = (total1 * phat_pool < 10) | (total1 * (1 - phat_pool) < 10)
+  condition2 = (total2 * phat_pool < 10) | (total2 * (1 - phat_pool) < 10)
+  if (condition1 | condition2) {
+    return(print("[hypothesis test]: # of observations condition is met"))
+  }
+  
+  SE = sqrt( ((phat_pool * (1 - phat_pool)) / total1) + ((phat_pool * (1 - phat_pool)) / total2) )
+  Z = (phat1 - phat2) / SE
+  pvalue = 2 * (1 - pnorm(abs(Z)))
+  
+  if (pvalue < .05) {
+    cat("\n✔ [hypothesis test] Statisticly sighnificant difference in proportions: ", "we'd reject the null hypoothesis pvalue = ", pvalue, " SE: ", SE, sep = "" )
+  } else {
+    cat("\n⊗ [hypothesis test] Statisticly sighnificant difference in proportions: ", "we'd not reject the null hypoothesis pvalue = ", pvalue, " SE: ", SE, sep = "" )
+  }
 }
 
 # loop thru all pairs and gen CI and p-value
@@ -305,3 +321,12 @@ for (i in k:(nColumns-2)) {
 }
 
 ```
+
+As we can see from the results of running the function on each pair, we were able to find the significant evidence in difference of population proportions in all but 2 pairs ( '0 not watching' <-> '2 watching'  and '3 watching a lot' <-> '4 all time'). Also the CIs and hypothesis tests agreed on results in all but the last pair('3 watching a lot' <-> '4 all time' ), since we use proportion estimation(phat_pool) for hypothesis tests, it might result in not accurate `standart error` estimation as we had with CI tests: `0.01850337`(ci) vs `0.01580229`(ht) thus resulting in slightly different conclusions. This is might be expected as the CI lower bound is very close to zero, and speaking in the context of the data, the difference between '3 watching a lot' and '4 all time' levels is somewhat on the border of the significance level threshold.
+
+
+### Recap
+
+We conducted the statistical inference in the context the question of interest: "Does there appear to be a relationship between time spent in front of TV and job satisfaction level?". We used the `chi-square test of independece` as we wanted to find an association between two variables one of which contain more than two levels. We have found a statisticly significant difference in proportions and concluded dependence. After that we looked closer on the data to find what levels exactly do have statisticly significant difference and found out that the strong majority of the groups do have the difference. The `CIs` and `hypothesis` tests agreed in all cases but the last one - due to the `standart error` estimation difference, and we assumed that the CI estimation is more accurate.
+
+
