@@ -37,7 +37,7 @@ load("gss.Rdata")
 counties selected in NORC's Master Sample. These SMSAs and counties were stratified by region, age, and race before selection.
   The chance of non-response bias was considered, so the interviewers are given instructions to canvass and interview only after 3:00 p.m. on weekdays or during the weekend or holidays. This type of sample design is most appropriate when the past experience and judgment of a project director suggest that sample biases are likely to be small relative to the precision of the measuring instrument and the decisions that are to be made.
   In addition to that, the `weighting` methods were applied, the GSS contains several weight variables (ADULTS, OVERSAMP, FORMWT, WTSSNR, WTSSALL) that users should use as needed as well as weight-related variables (ISSP+PHASE).
-  Taking in the considereation all of the above (random sampling/clustering, blocking, stratifying, weighting, multi-stage probability sample, the bias encounting) we can state that the study is generalizable to the english- and spanish-speaking population of the US over 18 y.o. Because of the observational nature of the study, no random assigmnet was done so we can not conclude causality.
+  Taking in the consideration all of the above (random sampling/clustering, blocking, stratifying, weighting, multi-stage probability sample, the bias is taken into account) we can state that the study is generalizable to the English- and Spanish-speaking population of the US over 18 y.o. Because of the observational nature of the study, no random assignment was done so we can not conclude causality.
 
 * * *
 
@@ -51,20 +51,20 @@ The question is of interest for author because he is interested in exploring how
 
 ## Part 3: Exploratory data analysis
 
-Let's start with analyzing the hours spent in front of TV. Using samaries statistics and visualization, let's describe the distribution of TV hours:
+Let's start with analyzing the hours spent in front of TV. Using summary statistics and visualization, let's describe the distribution of TV hours:
 
 ```{r}
 summary(gss$tvhours)
 ```
 
-From the summary statistics we can see that the distribution is slightly right-skewed (because the `median` is smaller than the `mean`), alos we can witness that there is a natural boundery around `0` because watching negative number of hours does not make sense, hence we have the boundery at 0 with a long tail up to 24 hours period.
+From the summary statistics we can see that the distribution is slightly right-skewed (because the `median` is smaller than the `mean`), also we can witness that there is a natural boundary around `0` because watching negative number of hours does not make sense, hence we have the boundary at 0 with a long tail up to 24 hours period.
 
 Let's visualize the data:
 
 ```{r}
 ggplot(gss, aes(x = tvhours)) + geom_histogram(binwidth = 1)
 ```
-The visualization conforms with our assumtions over moderate right skewness of the data. Now, for the sake of convinience, let's shrink number of the levels the variable has from 24 to 7:
+The visualization conforms with our assumptions over moderate right skewness of the data. Now, for the sake of convinience, let's shrink number of the levels the variable has from 24 to 7:
 
 
 ```{r}
@@ -87,12 +87,12 @@ tvData %>% group_by(tvhours7) %>% summarize(n = n())
 
 As we can see we now have a ordinal categorical variable with 4 levels.
 
-Let's explore the second variable in the same fashion, since the observations that have `NA` for TV hours spent are useless for our study, we will use the `tvData` data which we have ahd recently created. We will explore the `satjob` variable:
+Let's explore the second variable in the same fashion, since the observations that have `NA` for TV hours spent are useless for our study, we will use the `tvData` data which we have had recently created. We will explore the `satjob` variable:
 
 ```{r}
 summary(tvData$satjob)
 ```
-We can see that this is an ordinal categorical variable with `4` levels. A lot of observations have `NA` values, since they are not helpful for our needs let's just filter them out:
+We can see that this is an ordinal categorical variable with `4` levels. A lot of observations have `NA` values, since they are not helpful for our needs, first, let's just filter them out:
 
 ```{r}
 tvData <- tvData %>% filter(!is.na(satjob))
@@ -104,9 +104,9 @@ Now let's see the distributions of the categories:
 ```{r}
 ggplot(tvData, aes(x = satjob)) + geom_bar()
 ```
-We can see that the most people are satisfied with their jobs, the people that are dissatified with their jobs take less than 1/4 of the observations.
+We can see that the most people are satisfied with their jobs, the people that are dissatisfied with their jobs take less than 1/4 of the observations.
 
-Let's transform the data to have only two levels of satisfaction for the convinience sake:
+Let's transform the data to have only two levels of satisfaction for the convenience sake:
 
 ```{r}
 tvData <- tvData %>% mutate(satjob2 = ifelse(satjob == 'Very Satisfied' | satjob == 'Mod. Satisfied', 'Satisfied', 'Not satisfied'))
@@ -130,22 +130,22 @@ At the first glimpse we see that the data varies across the categories, let's bu
 ggplot(data = tvData, aes(x = satjob2, fill = tvhours7)) + geom_bar(position = "fill") +
   labs(title="Proportions who watch TV:") +
   xlab("job satisfaction") +
-  ylab("amont of time spent in front of TV") +
+  ylab("amount of time spent in front of TV") +
   scale_fill_discrete(name = "How much TV is watching")
 ```
-As we can see from the standartized barplot for levels proportions, the levels of `1 some time` and `3 watching a lot` have the most variation among the satisfaction levels. For the `1 some time` it is somewhat larger for the `Satisfied` level and is larger, at the same time the proportion of `3 watching a lot` is smaller for the `Satisfied` level and larger for the `Not satisfied` level. So our prior assumtion about the relation between the categories overall holds, so we can invest further into statistical inference methods to understand if this data provide a `statisticly significant` evidence that for the relation between the categories.
+As we can see from the standartized barplot for levels proportions, the levels of `1 some time` and `3 watching a lot` have the most variation among the satisfaction levels. For the `1 some time` it is somewhat larger for the `Satisfied` level and is larger, at the same time the proportion of `3 watching a lot` is smaller for the `Satisfied` level and larger for the `Not satisfied` level. So our prior assumtion about the relation between the categories overall holds, so we can invest further into statistical inference methods to understand if this data provide a `statistically significant` evidence that for the relation between the categories.
 
 * * *
 
 ## Part 4: Inference
 
-Let's do the inference, as we remember from the original research questions, we are intereseted if there appear to be a relationship between time spent in front of TV and job satisfaction level? Just finding a difference among the levels(and not knowing which levels exactly are different) is sufficient for our needs hence we can pick the `Chi-square independence` test to proceed. The test commonly used to determine whether there is a significant association between some two variables - exactly what we need here.
+Let's do the inference, as we remember from the original research questions, we are interested if there appear to be a relationship between time spent in front of TV and job satisfaction level? Just finding a difference among the levels(and not knowing which levels exactly are different) is sufficient for our needs hence we can pick the `Chi-square independence` test to proceed. The test commonly used to determine whether there is a significant association between some two variables - exactly what we need here.
 
 ### First, let's state out hypotheses.
 
 H0: Amount of TV watched per day and job satisfaction are independent, TV watching time habits job do not vary by job satisfaction.
 
-Ha: Amount of TV watched per day and job satisfacgtion are dependen, TV watching time habits do vary by job satisfaction.
+Ha: Amount of TV watched per day and job satisfaction are dependent, TV watching time habits do vary by job satisfaction.
 
 The `chi-square test of independence` in the nushell is:
 
@@ -156,13 +156,13 @@ The `chi-square test of independence` in the nushell is:
 ### Now, let's check the conditions needed for the chi-square test of independence
 
 1. Independence
-  - random sample - the randomsampling techniques applied while data collected (random sampling/clustering, stratifying,multi-stage probability sampling, see Part1 fro more details)
+  - random sample - the random sampling techniques applied while data collected (random sampling/clustering, stratifying,multi-stage probability sampling, see Part1 fro more details)
   - sampling without replacement, and sample size of 57061 is much smaller than 10% of the entire population
   - each case contributes only to one cell in the contingency table - there is no human can watch tv 2 hours and 0 hours per day on average simultaneously, same for the job satisfaction levels as they are mutually exclusive too.
 2. Sample size/skew
   - at least 5 expected cases for each cell
   
-To test the last `condition` (at least 5 expected cases for each cell) let's estimate the number of expected counts for each cell of the contincency table, as we remember, the folmular is `((total # in column) * (total # in row)) / (total #)`
+To test the last `condition` (at least 5 expected cases for each cell) let's estimate the number of expected counts for each cell of the contincency table, as we remember, the folmula is `((total # in column) * (total # in row)) / (total #)`
 
 
 ```{r}
@@ -225,15 +225,15 @@ As a sanity check, let's leverage the `inference` function and see if gives us t
 chisq.test(table(tvData$satjob2, tvData$tvhours7))
 ```
 
-As we can see the test statistics and all other parameters are almost equal to what we had, so it converged to the same results. Remember that this is an observational study so no causial relation can be inferred based on this, we can only say about the variables relation here.
+As we can see the test statistics and all other parameters are almost equal to what we had, so it converged to the same results. Remember that this is an observational study so no causal relation can be inferred based on this, we can only say about the variables relation here.
 
-To uderstand the actuall differences about to levels we can compare each TV watching time level by job satisfaction with other, reulsting in `(k * (k - 1)) / 2` total comparations. But first we will need to check all the condition needed for the inference over two categorical variables (same for each pair):
+To uderstand the actual differences about to levels we can compare each TV watching time level by job satisfaction with other, resulting in `(k * (k - 1)) / 2` total comparations. But first we will need to check all the condition needed for the inference over two categorical variables (same for each pair):
 
 1. Independence
-  - Whithin groups
+  - Within groups
     - random sampling indeed
-    - sampling without replacing, < 10% of entire population
-  - Between groups - the observations are independent between gropus - we assume that the TV watching habits and job satisfaction is independent among the people in the sample
+    - sampling without replacing, < 10% of the entire population
+  - Between groups - the observations are independent between groups - we assume that the TV watching habits and job satisfaction is independent among the people in the sample
 2. Sample size/skew (we will have to check it further upon computation):
   - `n1*p1 >= 10 and n1 * (1 - p1) >= 10`
   - `n2*p2 >= 10 and n2 * (1 - p2) >= 10`
@@ -242,23 +242,16 @@ We will need to create the confidence intervals for the difference of two propor
 
 For each groups comparations we will have the same Hypotheses:
 
-H0: p1 = p2 # the true poppulation parameter is the same among groups
-Ha: p1 != p2 # the true poppulation parameter is NOT the same among groups
+H0: p1 = p2 # the true population parameter is the same among groups
+Ha: p1 != p2 # the true population parameter is NOT the same among groups
 
 So let's write a function that will take the contingency table and two indecies, and to the inference for us:
 
 ```{r}
-contingency = table(tvData$satjob2, tvData$tvhours7)
-print(contingency)
-
-compareTwoProportions = function(contingencyTable, i1, i2) {
-  writeLines("\n-=-=-=-=-=-=-=-=-=-=-=-")
-  columnNames = colnames(contingencyTable)
-  cat("Comparing to proporiotns: '", columnNames[i1], "' and '",  columnNames[i2], "' ", sep = "")
+compareTwoProportionsCI = function(contingencyTable, i1, i2) {
   # get the columns
   column1 = contingencyTable[1:2, i1]
   column2 = contingencyTable[1:2, i2]
-  
   col1 = as.vector(column1)
   col2 = as.vector(column2)
   # first, let's compute the proportions for the observed data
@@ -283,13 +276,26 @@ compareTwoProportions = function(contingencyTable, i1, i2) {
   CIupper = (phat1 - phat2) + ME
   
   if ((CIlower > 0 & CIupper > 0) | (CIlower < 0 & CIupper < 0)) {
-    cat("\n✔ Statisticly sighnificant difference in proportions: ", "we'd reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", " SE: ", SE, sep = "" )
+    cat("\n✔ Statisticly significant difference in proportions: ", "we'd reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", " SE: ", SE, sep = "" )
   } else {
-    cat("\n⊗ Not a statisticly sighnificant difference in proportions: ", "we'd not reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", " SE: ", SE, sep = "" )
+    cat("\n⊗ Not a statisticly significant difference in proportions: ", "we'd not reject the null hypoothesis CI(", CIlower, ", ", CIupper, ")", " SE: ", SE, sep = "" )
   }
+}
+
+compareTwoProportionsHT = function(contingencyTable, i1, i2) {
+  # get the columns
+  column1 = contingencyTable[1:2, i1]
+  column2 = contingencyTable[1:2, i2]
   
-  # p value calculations
+  col1 = as.vector(column1)
+  col2 = as.vector(column2)
+  # first, let's compute the proportions for the observed data
+  total1 = sum(col1[1:length(col1)])
+  total2 = sum(col2[1:length(col2)])
+  # proportion estimates calculations
   phat_pool = sum(contingencyTable[2, 1:(ncol(contincency)-1)]) / sum(contingencyTable)
+  phat1 = col1[length(col1)] / total1
+  phat2 = col2[length(col2)] / total2
   
   # check the # of observations conditions
   condition1 = (total1 * phat_pool < 10) | (total1 * (1 - phat_pool) < 10)
@@ -303,30 +309,38 @@ compareTwoProportions = function(contingencyTable, i1, i2) {
   pvalue = 2 * (1 - pnorm(abs(Z)))
   
   if (pvalue < .05) {
-    cat("\n✔ [hypothesis test] Statisticly sighnificant difference in proportions: ", "we'd reject the null hypoothesis pvalue = ", pvalue, " SE: ", SE, sep = "" )
+    cat("\n✔ [hypothesis test] Statisticly significant difference in proportions: ", "we'd reject the null hypoothesis pvalue = ", pvalue, " SE: ", SE, sep = "" )
   } else {
-    cat("\n⊗ [hypothesis test] Statisticly sighnificant difference in proportions: ", "we'd not reject the null hypoothesis pvalue = ", pvalue, " SE: ", SE, sep = "" )
+    cat("\n⊗ [hypothesis test] Statisticly significant difference in proportions: ", "we'd not reject the null hypoothesis pvalue = ", pvalue, " SE: ", SE, sep = "" )
   }
 }
 
-# loop thru all pairs and gen CI and p-value
-nColumns <- ncol(contincency)
+
+
+contingency = table(tvData$satjob2, tvData$tvhours7)
+print(contingency)
+
+# Loop thru all pairs and gen CI and p-value
+nColumns <- ncol(contingency)
 k = 1
 for (i in k:(nColumns-2)) {
   for (j in (k+1):(nColumns-1)) {
-    #cat("\ni: ", i, " j: ", j, sep="")
-    compareTwoProportions(contingency, i, j)
+    writeLines("\n-=-=-=-=-=-=-=-=-=-=-=-")
+    columnNames = colnames(contingency)
+    cat("Comparing two proporiotns: '", columnNames[i], "' and '",  columnNames[j], "' ", sep = "")
+    compareTwoProportionsCI(contingency, i, j)
+    compareTwoProportionsHT(contingency, i, j)
   }
   k = k + 1
 }
 
 ```
 
-As we can see from the results of running the function on each pair, we were able to find the significant evidence in difference of population proportions in all but 2 pairs ( '0 not watching' <-> '2 watching'  and '3 watching a lot' <-> '4 all time'). Also the CIs and hypothesis tests agreed on results in all but the last pair('3 watching a lot' <-> '4 all time' ), since we use proportion estimation(phat_pool) for hypothesis tests, it might result in not accurate `standart error` estimation as we had with CI tests: `0.01850337`(ci) vs `0.01580229`(ht) thus resulting in slightly different conclusions. This is might be expected as the CI lower bound is very close to zero, and speaking in the context of the data, the difference between '3 watching a lot' and '4 all time' levels is somewhat on the border of the significance level threshold.
+As we can see from the results of running the function on each pair, we were able to find the significant evidence in difference of population proportions in all but 1 pair ( '0 not watching' <-> '2 watching'). Also the `confidence intervals` and `hypothesis tests` results agreed on results in all cases.
 
 
 ### Recap
 
-We conducted the statistical inference in the context the question of interest: "Does there appear to be a relationship between time spent in front of TV and job satisfaction level?". We used the `chi-square test of independece` as we wanted to find an association between two variables one of which contain more than two levels. We have found a statisticly significant difference in proportions and concluded dependence. After that we looked closer on the data to find what levels exactly do have statisticly significant difference and found out that the strong majority of the groups do have the difference. The `CIs` and `hypothesis` tests agreed in all cases but the last one - due to the `standart error` estimation difference, and we assumed that the CI estimation is more accurate.
+We conducted the statistical inference in the context the question of interest: "Does there appear to be a relationship between time spent in front of TV and job satisfaction level?". We used the `chi-square test of independence` as we wanted to find an association between two variables one of which contain more than two levels. We have found a statistically significant difference in proportions and concluded dependence. After that, we looked closer on the data to find what levels exactly do have statistically significant difference and found out that the majority of the groups do have the difference.
 
 
