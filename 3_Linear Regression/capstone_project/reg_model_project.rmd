@@ -24,29 +24,143 @@ your data file will be called `movies`. Delete this note when before you submit
 your work. 
 
 ```{r load-data}
-#load("movies.Rdata")
+load("movies.rdata")
 ```
-
-
 
 * * *
 
 ## Part 1: Data
 
+From the description of the data in the codebook we can see that "The data set is comprised of 651 randomly sampled movies produced and released before 2016", we can see that we have a random sample which implies that the data could be generalized to all movies released before 2014. However since the having such smaple could not be feasible let's see what the "movies.rdata" could tell us about the time range:
+
+```{r}
+summary(movies$thtr_rel_year)
+```
+
+As we can see from the sample statistics over the `thtr_rel_year` variable, the actual range is in between `1970` - `2014` so assuming that the random sample part of the description is `true` we would say that the data could be generalized to all movies that were released between 1970 to 2014.
+
+This is an observational study and no random assignment was used so we cannot do any causal conclusions.
 
 * * *
 
 ## Part 2: Research question
 
+Do the movies that have good rating on `IMDB` expected to also have a good rating in `Rotten tomatoes`?
 
+The question is of interest for the author since when he wants to see a movie, he have to read the rating on both `IMDB` and `Rotten Tomatoes` resources. Knowing a relation between rating of the two sites and by building a linear regression model, the author can potentially save a lot of time by using the model to predict the rating on the other resource instgead of reading the actual reviews.
 
 * * *
 
 ## Part 3: Exploratory data analysis
 
-NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
-button above. Make sure that your code is visible in the project you submit. 
-Delete this note when before you submit your work.
+Let's do an exploratory data analysis to see what the data we are working with.
+
+### IMDB Rating
+
+Let's explore the `imdb_rating` variable first.
+
+```{r}
+summary(movies$imdb_rating)
+str(movies$imdb_rating)
+```
+
+As we can see, the `imdb_rating` is `numerical` that is rounded to one decimal place. While the `imdb` site has the `1-10` ranting range, the max rating value is actually for the data. Also since the `median` is very close to `mean` we expect the distribution not to be very skewed (but still skewed), since the `mean` is smaller than the `median` we expect to see a lower tail skew(the skewness pull the mean to the left).
+
+Let's see the distribution:
+
+```{r}
+ggplot(movies, aes(x = imdb_rating)) + geom_histogram(binwidth = .5)
+```
+
+The histogramm confirms our asummptions - the distribution is slightly left skewed with majority of the observations in between `5.5` to `7.75` range which mean that the imdb users are not tend to give a movie a very small or very high mark with preference to the higher one.
+
+
+### Audience Score
+
+Let's do the same EDA sfor the `audience_score` variable.
+
+```{r}
+summary(movies$audience_score)
+str(movies$audience_score)
+```
+
+The statistics show that this is numerical variable inbetween with range of `1` to `100` rounded to two decimal placesThe actual min is `11` and max is `97`, surprisingly looking at the computed statistics alone we can expect that the distribution is very similar to the one we had for the `imdb_rating` variable - `mean` is very close but still smaller to `median` which indicates a slight left skew. Let's build a histogram to visualize it:
+
+```{r}
+ggplot(movies, aes(x = audience_score)) + geom_histogram(binwidth = 5)
+```
+
+Our assumptions are about true, the distribution is not exact the same - it has much longer left tail thus more spread. The majority of the observation are in between of `25` to `90`, observations on the higher end are closer to the max score than we had for the `imdb_rating` variable.
+
+For the sake of the convnience let's normalize the variables to the randge of [0...1], while it is not necessary for our research, it still more convinient to have the same scale for both variables:
+
+```{r}
+movies <- movies %>% mutate(imdb_rating_norm = imdb_rating / 10, audience_score_norm = audience_score / 100)
+str(movies$imdb_rating_norm)
+str(movies$audience_score_norm)
+```
+
+Let's scatterplot the variables to see if there is any correlation trend between them:
+
+```{r}
+ggplot(movies, aes(x = imdb_rating_norm, y = audience_score_norm)) + geom_jitter()
+```
+
+On the plot we can see a strong positive about linear assosiation between the variables. The trend might be not perfectly linear but we dare to proceed further in our analysis. If we will find any strong deviations from the conditions that have to be met for the varaibles for building a linear regression model, we will be more certain if the method we are using is not appropriate for the data.
+
+The correlation could be evaluated with a single number:
+
+```{r}
+cor(movies$imdb_rating_norm, movies$audience_score_norm)
+```
+
+The `cor` function supports our assumtions about strong assosiation between the variables.
+
+Let's check the conditions for Lienar regression.
+
+##### Linearity
+
+> The relationship between `explanatory` and `response` variable should be `linear`.
+
+For checking the linearity condition, we can fit a line to the scatterplot along with a residuals plot:
+
+```{r}
+ggplot(movies, aes(x = imdb_rating_norm, y = audience_score_norm)) + geom_jitter() + geom_smooth(method = "lm")
+md <- lm(audience_score_norm ~ imdb_rating_norm, data = movies)
+
+plot(md$residuals ~ movies$audience_score_norm) # linear assosiation = random scatter
+```
+
+```{r}
+plot(md$residuals ~ md$fitted) # constant variability - no fan shape
+plot(abs(md$residuals) ~ md$fit)
+
+
+hist(md$residuals) # nearly normal residuals - left skewed
+qqnorm(md$residuals)
+qqline(md$residuals)
+
+plot(md$residuals) # independence / time series - no pattern
+
+```
+
+
+##### Nearly Normal Residuals
+
+##### Constant Variability
+
+
+Now let's see if there any correlation between the potential `explanatory`(`imdb_rating`) and `response`(`best_dir_win`) variables:
+
+```{r}
+
+movies <- movies %>% mutate(best_pic_win_num = ifelse(best_pic_win == 'yes', 1, 0))
+movies <- movies %>% mutate(best_pic_nom_num = ifelse(best_pic_nom == 'yes', 1, 0))
+cor(movies$imdb_rating, movies$runtime)
+```
+
+Since we will try to build a linear model, let's make sure the variable fits the requirements for the explanatory variable.
+
 
 * * *
 
