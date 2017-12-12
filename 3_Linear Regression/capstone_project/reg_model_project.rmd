@@ -106,7 +106,7 @@ Let's scatterplot the variables to see if there is any correlation trend between
 ggplot(movies, aes(x = imdb_rating_norm, y = audience_score_norm)) + geom_jitter()
 ```
 
-On the plot we can see a strong positive about linear assosiation between the variables. The trend might be not perfectly linear but we dare to proceed further in our analysis. If we will find any strong deviations from the conditions that have to be met for the varaibles for building a linear regression model, we will be more certain if the method we are using is not appropriate for the data.
+On the plot we can see a strong positive about linear assosiation(slightly curved) between the variables. The trend might be not perfectly linear but we dare to proceed further in our analysis. If we will find any strong deviations from the conditions that have to be met for the varaibles for building a linear regression model, we will be more certain if the method we are using is not appropriate for the data.
 
 The correlation could be evaluated with a single number:
 
