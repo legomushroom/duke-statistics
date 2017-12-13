@@ -15,6 +15,8 @@ output:
 library(ggplot2)
 library(dplyr)
 library(statsr)
+install.packages("GGally")
+library(GGally)
 ```
 
 ### Load data
@@ -45,7 +47,7 @@ This is an observational study and no random assignment was used so we cannot do
 
 ## Part 2: Research question
 
-Do the movies that have good rating on `IMDB` expected to also have a good rating in `Rotten tomatoes`?
+1. Do the movies that have good rating on `Rotten tomatoes` expected to also have a good rating in `IMDB`?
 
 The question is of interest for the author since when he wants to see a movie, he have to read the rating on both `IMDB` and `Rotten Tomatoes` resources. Knowing a relation between rating of the two sites and by building a linear regression model, the author can potentially save a lot of time by using the model to predict the rating on the other resource instgead of reading the actual reviews.
 
@@ -74,7 +76,6 @@ ggplot(movies, aes(x = imdb_rating)) + geom_histogram(binwidth = .5)
 
 The histogramm confirms our asummptions - the distribution is slightly left skewed with majority of the observations in between `5.5` to `7.75` range which mean that the imdb users are not tend to give a movie a very small or very high mark with preference to the higher one.
 
-
 ### Audience Score
 
 Let's do the same EDA sfor the `audience_score` variable.
@@ -87,7 +88,7 @@ str(movies$audience_score)
 The statistics show that this is numerical variable inbetween with range of `1` to `100` rounded to two decimal placesThe actual min is `11` and max is `97`, surprisingly looking at the computed statistics alone we can expect that the distribution is very similar to the one we had for the `imdb_rating` variable - `mean` is very close but still smaller to `median` which indicates a slight left skew. Let's build a histogram to visualize it:
 
 ```{r}
-ggplot(movies, aes(x = audience_score)) + geom_histogram(binwidth = 5)
+ggplot(movies, aes(x = audience_score)) + geom_histogram(binwidth = 10)
 ```
 
 Our assumptions are about true, the distribution is not exact the same - it has much longer left tail thus more spread. The majority of the observation are in between of `25` to `90`, observations on the higher end are closer to the max score than we had for the `imdb_rating` variable.
@@ -100,13 +101,16 @@ str(movies$imdb_rating_norm)
 str(movies$audience_score_norm)
 ```
 
+
+### imdb_rating vs audience_score
+
 Let's scatterplot the variables to see if there is any correlation trend between them:
 
 ```{r}
-ggplot(movies, aes(x = imdb_rating_norm, y = audience_score_norm)) + geom_jitter()
+ggplot(movies, aes(x = audience_score_norm, y = imdb_rating_norm)) + geom_jitter()
 ```
 
-On the plot we can see a strong positive about linear assosiation(slightly curved) between the variables. The trend might be not perfectly linear but we dare to proceed further in our analysis. If we will find any strong deviations from the conditions that have to be met for the varaibles for building a linear regression model, we will be more certain if the method we are using is not appropriate for the data.
+On the plot we can see a strong positive about linear assosiation between the variables. We can also see a slight curvature in the data, we will need to confirm the linearity condition.
 
 The correlation could be evaluated with a single number:
 
@@ -131,46 +135,214 @@ md <- lm(audience_score_norm ~ imdb_rating_norm, data = movies)
 plot(md$residuals ~ movies$audience_score_norm) # linear assosiation = random scatter
 ```
 
-```{r}
-plot(md$residuals ~ md$fitted) # constant variability - no fan shape
-plot(abs(md$residuals) ~ md$fit)
-
-
-hist(md$residuals) # nearly normal residuals - left skewed
-qqnorm(md$residuals)
-qqline(md$residuals)
-
-plot(md$residuals) # independence / time series - no pattern
-
-```
-
-
-##### Nearly Normal Residuals
+We expect to see exactly random scatter around `0` to confirm the `linearity` condition, the condition does not strongly  holds, many observations clustered in bottom right corner hence we will need to clearly state the reservation in the conclusion of our study.
 
 ##### Constant Variability
 
-
-Now let's see if there any correlation between the potential `explanatory`(`imdb_rating`) and `response`(`best_dir_win`) variables:
+Let's check another codition for linear regression modeling - the `constant variability`, for that we will check plots of residuals vs their fit values as well as `absolute` value of the residuals vs their fit. If the `constant variability` condition holds we do not expect to see a fan shape on the plots:
 
 ```{r}
-
-movies <- movies %>% mutate(best_pic_win_num = ifelse(best_pic_win == 'yes', 1, 0))
-movies <- movies %>% mutate(best_pic_nom_num = ifelse(best_pic_nom == 'yes', 1, 0))
-cor(movies$imdb_rating, movies$runtime)
+plot(md$residuals ~ md$fitted)
+plot(abs(md$residuals) ~ md$fit)
 ```
 
-Since we will try to build a linear model, let's make sure the variable fits the requirements for the explanatory variable.
+Unfortunately we crearly see the negative fan shape for in the plot hnce the condition does not hold too.
 
+##### Nearly Normal Residuals
+
+If the nearly normal residuals condition holds, we would see a nearly-normal unimodal symmetric distribution on residuals histogram, also we can check the `theoretical quantiles` to spot any deviations from the normality line:
+
+```{r}
+hist(md$residuals)
+
+qqnorm(md$residuals); qqline(md$residuals)
+```
+
+We see a slight right skew in the histogram, with such a big sample it might be totally fine. Looking at the theoretical quantiles plot we see few outliers at the higher end, while the deviation might be strong these are just few observations so we can conclude that the condition holds with few reservations.
+
+##### Independence
+
+While we have a random sample which speaks to independence of the residuals, let;s plot the residuals to try to spot any pattern which will mean that we have time series observations(non-idependence):
+
+```{r}
+plot(md$residuals)
+```
+
+The residuals plot looks totally fine, the data is randomly scattered around 0 without any obvious pattern - the condition of independence holds.
+
+
+### Exploring More Variables
+
+Let's see what variables could be helpful in linear regression modeling, for that we will create a matrix plot:
+
+
+```{r}
+# subset the `movies` data with the variables of interest
+movies2 = data.frame(imdb_rating = movies$imdb_rating, best_actor_win = movies$best_actor_win, best_dir_win = movies$best_dir_win, best_actress_win = movies$best_actress_win, audience_score = movies$audience_score, runtime = movies$runtime, critics_score = movies$critics_score)
+
+movies2 = movies2 %>% mutate(best_actor_win = ifelse(best_actor_win == 'yes', 1, 0))
+movies2 = movies2 %>% mutate(best_actress_win = ifelse(best_actress_win == 'yes', 1, 0))
+movies2 = movies2 %>% mutate(best_dir_win = ifelse(best_dir_win == 'yes', 1, 0))
+
+ggpairs(movies2)
+```
+
+From the matrix plot above we can learn few lessons:
+
+  1. `critics_score` have a large correlation value with the `imdb_rating` (0.765) but at the same time, the `critics_score` and `audience_score` are strongly assosiated as well. Thus using both variables for linear regression models will complicate model estimation.
+  2. surprisingly, the `runtime` variable might be a significant predictor - the correlation with `imdb_rating` is 0.268 and
+correlation with the `audience_score` variable ios fairly weak.
+  3. the `best_actress_win`, `best_actor_win` and `best_dir_win` variables have very weak assosiation with the response variable thus might not be significant predictors.
 
 * * *
 
 ## Part 4: Modeling
 
-NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
-button above. Make sure that your code is visible in the project you submit. 
-Delete this note when before you submit your work.
+Let's build a linear regression model for predicting the `imdb_rating` score. Since we are interesed in model performance rather than finding which variables are significant predictor of the response variable, we will use `adjusted R^2` method. Whether we will do `forward selection` or `backward elimination` is not important for the study so we will pick the later.
 
-* * *
+```{r}
+model = lm(imdb_rating ~ best_actor_win + best_dir_win + best_actress_win + audience_score + runtime + critics_score, data = movies2)
+
+summary(model)
+```
+
+We have a large `adjusted R^2` value which evaluates or model performance. As we expected the `p-values` for the `best_actor_win`, `best_dir_win` and `best_actress_win` are much larger than the significance level of `5%` thus we will reject the null hypothesis concluding that thees data do not provide significant evidence that each of the variables are significant predictors of the response variable, given all else hold constant. Of course since we use the adjusted R^2 method, we will not use this insight for model optimization.
+
+
+Next we will remove each variable one by one and see if absense of any of the variables gives use improvement in our `R^2` value:
+
+
+```{r}
+print('initial')
+print(summary(model)$adj.r.squared)
+
+m1 = lm(imdb_rating ~ best_dir_win + best_actress_win + 
+    audience_score + runtime + critics_score, data = movies2)
+print('best_actor_win')
+print(summary(m1)$adj.r.squared)
+
+m2 = lm(imdb_rating ~ best_actor_win + best_actress_win + 
+    audience_score + runtime + critics_score, data = movies2)
+print('best_dir_win')
+print(summary(m2)$adj.r.squared)
+
+m3 = lm(imdb_rating ~ best_actor_win + best_dir_win + 
+    audience_score + runtime + critics_score, data = movies2)
+print('best_actress_win')
+
+m4 = lm(imdb_rating ~ best_actor_win + best_dir_win + best_actress_win + runtime + critics_score, data = movies2)
+print('audience_score')
+print(summary(m4)$adj.r.squared)
+
+m5 = lm(imdb_rating ~ best_actor_win + best_dir_win + best_actress_win + 
+    audience_score + critics_score, data = movies2)
+print('runtime')
+print(summary(m5)$adj.r.squared)
+
+m6 = lm(imdb_rating ~ best_actor_win + best_dir_win + best_actress_win + 
+    audience_score + runtime, data = movies2)
+print('critics_score')
+print(summary(m6)$adj.r.squared)
+```
+
+As we can see, fropping the `best_dir_win` will give us the most `adjusted R^2` gains. Next, taking the new improved `adjusted R^2` as the base value, we will need to repeat the same will variables that was not dropped, eliminating them, one by one, until the `adjusted R^2` will stop improving.
+
+
+```{r}
+m0 = lm(imdb_rating ~ best_actor_win + best_actress_win + 
+    audience_score + runtime + critics_score, data = movies2)
+print('initial')
+print(summary(m0)$adj.r.squared)
+
+m1 = lm(imdb_rating ~ best_actress_win + 
+    audience_score + runtime + critics_score, data = movies2)
+print('best_actor_win')
+print(summary(m1)$adj.r.squared)
+
+m2 = lm(imdb_rating ~ best_actor_win + 
+    audience_score + runtime + critics_score, data = movies2)
+print('best_actress_win')
+print(summary(m2)$adj.r.squared)
+
+m3 = lm(imdb_rating ~ best_actor_win + best_actress_win + 
+     runtime + critics_score, data = movies2)
+print('audience_score')
+print(summary(m3)$adj.r.squared)
+
+m4 = lm(imdb_rating ~ best_actor_win + best_actress_win + 
+    audience_score + critics_score, data = movies2)
+print('runtime')
+print(summary(m4)$adj.r.squared)
+
+m5 = lm(imdb_rating ~ best_actor_win + best_actress_win + 
+    audience_score + runtime, data = movies2)
+print('critics_score')
+print(summary(m5)$adj.r.squared)
+```
+
+On this iteration, it makes sense to drop the `best_actor_win` variable a it gives us the biggest `adjusted R^2` gains.
+
+
+```{r}
+m0 = lm(imdb_rating ~ best_actress_win + 
+    audience_score + runtime + critics_score, data = movies2)
+print('initial')
+print(summary(m0)$adj.r.squared)
+
+m1 = lm(imdb_rating ~ audience_score + runtime + critics_score, data = movies2)
+print('best_actress_win')
+print(summary(m1)$adj.r.squared)
+
+m2 = lm(imdb_rating ~ best_actress_win + 
+     runtime + critics_score, data = movies2)
+print('audience_score')
+print(summary(m2)$adj.r.squared)
+
+m3 = lm(imdb_rating ~ best_actress_win + 
+    audience_score + critics_score, data = movies2)
+print('runtime')
+print(summary(m3)$adj.r.squared)
+
+m4 = lm(imdb_rating ~ best_actress_win + 
+    audience_score + runtime, data = movies2)
+print('critics_score')
+print(summary(m4)$adj.r.squared)
+```
+
+On this iteration, dropping the `best_actress_win` variable will give use the most gains in `adjusted R^2` value.
+
+```{r}
+m0 = lm(imdb_rating ~ audience_score + runtime + critics_score, data = movies2)
+print('initial')
+print(summary(m0)$adj.r.squared)
+
+m1 = lm(imdb_rating ~ runtime + critics_score, data = movies2)
+print('audience_score')
+print(summary(m1)$adj.r.squared)
+
+m2 = lm(imdb_rating ~ audience_score + critics_score, data = movies2)
+print('runtime')
+print(summary(m2)$adj.r.squared)
+
+m3 = lm(imdb_rating ~ audience_score + runtime, data = movies2)
+print('critics_score')
+print(summary(m3)$adj.r.squared)
+```
+
+Dropping any of the variable will not give us any improvements in `adjusted R^2` value so we stop iterating, our model is ready.
+
+```{r}
+summary(m0)
+```
+
+We can see that the `F-statistic` for the model is `895.3` on 3 and 646 degrees of freedom, such a large critical F score gives us nearly zero `p-value` will confirms the model performace for such big `adjusted R^2` value.
+
+Alos we can see that each of the variables have the tiny `p-values` which states that they are significant predictors of the response(`imdb_rating`) variable.
+
+## int
+
+* Interpret slopes
+* make the CIs and interpret them
 
 ## Part 5: Prediction
 
