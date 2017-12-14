@@ -93,85 +93,28 @@ ggplot(movies, aes(x = audience_score)) + geom_histogram(binwidth = 10)
 
 Our assumptions are about true, the distribution is not exact the same - it has much longer left tail thus more spread. The majority of the observation are in between of `25` to `90`, observations on the higher end are closer to the max score than we had for the `imdb_rating` variable.
 
-For the sake of the convnience let's normalize the variables to the randge of [0...1], while it is not necessary for our research, it still more convinient to have the same scale for both variables:
-
-```{r}
-movies <- movies %>% mutate(imdb_rating_norm = imdb_rating / 10, audience_score_norm = audience_score / 100)
-str(movies$imdb_rating_norm)
-str(movies$audience_score_norm)
-```
-
-
-### imdb_rating vs audience_score
+### audience_score vs imdb_rating
 
 Let's scatterplot the variables to see if there is any correlation trend between them:
 
 ```{r}
-ggplot(movies, aes(x = audience_score_norm, y = imdb_rating_norm)) + geom_jitter()
+ggplot(movies, aes(x = audience_score, y = imdb_rating)) + geom_jitter()
 ```
 
-On the plot we can see a strong positive about linear assosiation between the variables. We can also see a slight curvature in the data, we will need to confirm the linearity condition.
+On the plot we can see a strong positive about linear assosiation between the variables. We can also see a tiny curvature in the data, we will need to confirm the linearity condition when we will do the model diagnostics.
 
 The correlation could be evaluated with a single number:
 
 ```{r}
-cor(movies$imdb_rating_norm, movies$audience_score_norm)
+cor(movies$imdb_rating, movies$audience_score)
 ```
 
 The `cor` function supports our assumtions about strong assosiation between the variables.
 
-Let's check the conditions for Lienar regression.
+* * *
 
-##### Linearity
+## Part 4: Modeling
 
-> The relationship between `explanatory` and `response` variable should be `linear`.
-
-For checking the linearity condition, we can fit a line to the scatterplot along with a residuals plot:
-
-```{r}
-ggplot(movies, aes(x = imdb_rating_norm, y = audience_score_norm)) + geom_jitter() + geom_smooth(method = "lm")
-md <- lm(audience_score_norm ~ imdb_rating_norm, data = movies)
-
-plot(md$residuals ~ movies$audience_score_norm) # linear assosiation = random scatter
-```
-
-We expect to see exactly random scatter around `0` to confirm the `linearity` condition, the condition does not strongly  holds, many observations clustered in bottom right corner hence we will need to clearly state the reservation in the conclusion of our study.
-
-##### Constant Variability
-
-Let's check another codition for linear regression modeling - the `constant variability`, for that we will check plots of residuals vs their fit values as well as `absolute` value of the residuals vs their fit. If the `constant variability` condition holds we do not expect to see a fan shape on the plots:
-
-```{r}
-plot(md$residuals ~ md$fitted)
-plot(abs(md$residuals) ~ md$fit)
-```
-
-Unfortunately we crearly see the negative fan shape for in the plot hnce the condition does not hold too.
-
-##### Nearly Normal Residuals
-
-If the nearly normal residuals condition holds, we would see a nearly-normal unimodal symmetric distribution on residuals histogram, also we can check the `theoretical quantiles` to spot any deviations from the normality line:
-
-```{r}
-hist(md$residuals)
-
-qqnorm(md$residuals); qqline(md$residuals)
-```
-
-We see a slight right skew in the histogram, with such a big sample it might be totally fine. Looking at the theoretical quantiles plot we see few outliers at the higher end, while the deviation might be strong these are just few observations so we can conclude that the condition holds with few reservations.
-
-##### Independence
-
-While we have a random sample which speaks to independence of the residuals, let;s plot the residuals to try to spot any pattern which will mean that we have time series observations(non-idependence):
-
-```{r}
-plot(md$residuals)
-```
-
-The residuals plot looks totally fine, the data is randomly scattered around 0 without any obvious pattern - the condition of independence holds.
-
-
-### Exploring More Variables
 
 Let's see what variables could be helpful in linear regression modeling, for that we will create a matrix plot:
 
@@ -193,10 +136,8 @@ From the matrix plot above we can learn few lessons:
   2. surprisingly, the `runtime` variable might be a significant predictor - the correlation with `imdb_rating` is 0.268 and
 correlation with the `audience_score` variable ios fairly weak.
   3. the `best_actress_win`, `best_actor_win` and `best_dir_win` variables have very weak assosiation with the response variable thus might not be significant predictors.
-
-* * *
-
-## Part 4: Modeling
+  
+We will use all of the variables above(`best_actress_win`, `best_actor_win`, `best_dir_win`, `audience_score`, `runtime` `critics_score`) for our full model to start with and see if our assumptions hold.
 
 Let's build a linear regression model for predicting the `imdb_rating` score. Since we are interesed in model performance rather than finding which variables are significant predictor of the response variable, we will use `adjusted R^2` method. Whether we will do `forward selection` or `backward elimination` is not important for the study so we will pick the later.
 
@@ -206,7 +147,7 @@ model = lm(imdb_rating ~ best_actor_win + best_dir_win + best_actress_win + audi
 summary(model)
 ```
 
-We have a large `adjusted R^2` value which evaluates or model performance. As we expected the `p-values` for the `best_actor_win`, `best_dir_win` and `best_actress_win` are much larger than the significance level of `5%` thus we will reject the null hypothesis concluding that thees data do not provide significant evidence that each of the variables are significant predictors of the response variable, given all else hold constant. Of course since we use the adjusted R^2 method, we will not use this insight for model optimization.
+We have a large `adjusted R^2` value which evaluates the model performance. As we expected the `p-values` for the `best_actor_win`, `best_dir_win` and `best_actress_win` are much larger than the significance level of `5%` thus we will reject the null hypothesis concluding that thees data do not provide significant evidence that each of the variables are significant predictors of the response variable, given all else hold constant. Of course since we use the adjusted R^2 method, we will not use this insight for model optimization.
 
 
 Next we will remove each variable one by one and see if absense of any of the variables gives use improvement in our `R^2` value:
@@ -335,14 +276,145 @@ Dropping any of the variable will not give us any improvements in `adjusted R^2`
 summary(m0)
 ```
 
-We can see that the `F-statistic` for the model is `895.3` on 3 and 646 degrees of freedom, such a large critical F score gives us nearly zero `p-value` will confirms the model performace for such big `adjusted R^2` value.
+We can see that the `F-statistic` for the model is `895.3` on 3 and 646 degrees of freedom, such a large critical F score gives us nearly zero `p-value`(<2.2e-16) that confirms model performace with such big `adjusted R^2` value (0.8052) which eventually means that at least one of the explanatory variable is a significant predictor of the response variable. At the same time, we can see that each of the variables have the tiny `p-values` which means that each of them is a significant predictors of the response(`imdb_rating`) variable given everything else hold constant.
 
-Alos we can see that each of the variables have the tiny `p-values` which states that they are significant predictors of the response(`imdb_rating`) variable.
+###### Interpritation of slopes
 
-## int
+  - *audince_score*: With additional 1 point increase of `audience_score`, we would expect increase in the `imdb_rating` score by `0.0340659` points on average, given everything else held constant.
+  - *runtime*: With additional 1 point increase of `runtime`, we would expect increase in the `imdb_rating` score by
+  `0.0056647` points on average, given everything else held constant.
+  - *critics_score*: With additional 1 point increase of `critics_score`, we would expect increase in the `imdb_rating` score by `0.0114496` points on average, given everything else held constant.
+  
+###### Confidence Intervals and Their Interpritation
 
-* Interpret slopes
-* make the CIs and interpret them
+We can compute CIs for the given parameters, as we can remember CIs are allways `point estimate +- t*df * SE`.
+We are given with the `point estimate` and `SE`, we also know the sample size so can compute the critical t-score `t*df`.
+
+`df = n - k - 1` - because we loose 1 degree of freedom for each predictor
+`df = 651 - 3 - 1 = 647`
+
+Knowing the `df` value, we can compute the critical `t-score`, since the degrees of freedom value is large, we would expect the T-distibution to be close to normal distribution thus close to `1.96` for `95% CI`.
+
+```{r}
+abs(qt(0.025, df = 647))
+```
+As expected the critical score value is very close to the `1.96`.
+
+Now we can compute the CIs:
+
+**audience_score**
+
+```{r}
+ME = abs(qt(0.025, df = 647)) * 0.0013129
+b = 0.0340659
+print(b - ME)
+print(b + ME)
+```
+
+We are `95%` sure, that for each additional point in `audience_score`, the response variable, `imdb_rating` expected to be by 0.03148784 larger to 0.03664396 larger, given all esle held constant. The result agreed with the `p-value` as the `CI` does not contain the `null-value` (0) which means we would reject the null-hypothesis given the CI alone.
+
+**runtime**
+
+```{r}
+ME = abs(qt(0.025, df = 647)) * 0.0009848
+b = 0.0056647
+print(b - ME)
+print(b + ME)
+```
+
+We are `95%` sure, that for each additional point in `audience_score`, the response variable, `imdb_rating` expected to be by 0.00373091 larger to 0.00759849 larger, given all esle held constant.  The result agreed with the `p-value` as the `CI` does not contain the `null-value` (0) which means we would reject the null-hypothesis given the CI alone.
+
+**critics_score**
+
+```{r}
+ME = abs(qt(0.025, df = 647)) * 0.0009336
+b = 0.0114496
+print(b - ME)
+print(b + ME)
+```
+
+We are `95%` sure, that for each additional point in `audience_score`, the response variable, `imdb_rating` expected to be by 0.009616348 larger to 0.01328285 larger, given all esle held constant.  The result agreed with the `p-value` as the `CI` does not contain the `null-value` (0) which means we would reject the null-hypothesis given the CI alone.
+
+
+### Model Diagnostics
+
+We need to perform model diagnostics to see if each of the variable conforms with the conditions needed for linear regression modeling.
+
+#### Linearity
+
+##### audience_score
+
+> The relationship between `explanatory` and `response` variable should be `linear`.
+
+For checking the linearity condition, we can fit a line to the scatterplot along with a residuals plot:
+
+```{r}
+ggplot(movies, aes(x = imdb_rating, y = audience_score)) + geom_jitter() + geom_smooth(method = "lm")
+
+plot(m0$residuals ~ movies$audience_score) # linear assosiation = random scatter
+```
+
+We expect to see exactly random scatter around `0` to confirm the `linearity` condition, we can witness that the condition  holds overall, there are some outliers at the bottom of the page but that should be ok as there are few of them.
+
+##### runtime
+
+For checking the linearity condition, we can fit a line to the scatterplot along with a residuals plot:
+
+```{r}
+ggplot(movies, aes(x = imdb_rating, y = runtime)) + geom_jitter() + geom_smooth(method = "lm")
+
+plot(m0$residuals ~ movies$runtime) # linear assosiation = random scatter
+```
+
+We can confirm that the condition overall holds, the majority of observations clustered in a blob with the center in `0`, with some of the outliers at the bottom and at right right of the blob.
+
+##### critics_score
+
+For checking the linearity condition, we can fit a line to the scatterplot along with a residuals plot:
+
+```{r}
+ggplot(movies, aes(x = imdb_rating, y = critics_score)) + geom_jitter() + geom_smooth(method = "lm")
+
+plot(m0$residuals ~ movies$critics_score) # linear assosiation = random scatter
+```
+
+We can see that the condition holds overall with, there are some observations in left bottom corner that must be clearly stated in reservations of the model.
+
+
+
+##### Constant Variability
+
+Let's check another codition for linear regression modeling - the `constant variability`, for that we will check plots of residuals vs their fit values as well as `absolute` value of the residuals vs their fit. If the `constant variability` condition holds we do not expect to see a fan shape on the plots:
+
+```{r}
+plot(m0$residuals ~ m0$fitted)
+plot(abs(m0$residuals) ~ m0$fit)
+```
+
+On the first and the second plot we cannot see a clear trend in the data, the seond plot does not contain any triangle which means there is no fan shape can be observed.
+
+##### Nearly Normal Residuals
+
+If the nearly normal residuals condition holds, we would see a nearly-normal unimodal symmetric distribution on residuals histogram, also we can check the `theoretical quantiles` to spot any deviations from the normality line:
+
+```{r}
+hist(md$residuals)
+
+qqnorm(md$residuals); qqline(md$residuals)
+```
+
+We see a slight right skew in the histogram, but with such a big sample it might be totally fine. Looking at the theoretical quantiles plot we see few outliers at the higher end, while the deviation might be strong these are just few observations so we can conclude that the condition holds with small reservations.
+
+##### Independence
+
+While we have a random sample which speaks to independence of the residuals, let's plot the residuals to try to spot any pattern which will mean that we have time series observations(non-idependence):
+
+```{r}
+plot(md$residuals)
+```
+
+The residuals plot looks totally fine, the data is randomly scattered around 0 without any obvious pattern - the condition of independence holds.
+
 
 ## Part 5: Prediction
 
