@@ -418,9 +418,23 @@ The residuals plot looks totally fine, the data is randomly scattered around 0 w
 
 ## Part 5: Prediction
 
-NOTE: Insert code chunks as needed by clicking on the "Insert a new code chunk" 
-button above. Make sure that your code is visible in the project you submit. 
-Delete this note when before you submit your work.
+Now we can pick a movie form the past to make a prediction. It is important to pick a movie that was released inbetween 1970-2014, as otherwise the prediction will imply `extrapolation` which will give us unreliable results.
+
+Let's pick a ["The Lord of the Rings: The Two Towers (2002)"](https://www.rottentomatoes.com/m/the_lord_of_the_rings_the_two_towers) movie form the `Rotten Tomatoes`
+
+
+```{r}
+newdata = data.frame(audience_score=95, runtime = 180, critics_score = 96)
+predict(m0, newdata, interval="predict")
+```
+
+So we are `95%` confident that the true `The Lord of the Rings: The Two Towers (2002)` movie rating on `imdb` for audience score equal to 95%, with runtime of 180minutes and critics score = 96% is 7.5 to 9.4 points.
+
+Our model predicted the value to be `8.46` with the uncertainty interval above. If we will refere to the moview at the the [imdb](http://www.imdb.com/title/tt0167261/?ref_=nv_sr_3) site, we will see that the model slighly underestimates the rating, it is very close to the real observed value though, given that we use just 3 linear predictors:
+
+`yhat = 8.463115`
+`y = 8.7`
+`residual = 8.7 - 8.46 = 0.24` => positive residual, model underestimates the rating score.
 
 * * *
 
