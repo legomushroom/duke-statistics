@@ -22,7 +22,6 @@ library(ggplot2)
 
 As usual, the data set and analysis functions will be provided by the `statsr` package and we will be using `dplyr` and `ggplot2` for manipulating and visualizing the data.
 
-
 ### The data
 
 In 2004, the state of North Carolina released a large data set containing 
