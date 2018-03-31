@@ -14,19 +14,24 @@ First, let us load the data:
 
 ```{r load}
 load("ames_train.Rdata")
-```
 
+library(dplyr)
+library(ggplot2)
+```
 
 1. Which of the following are the three variables with the highest number of missing observations?
 <ol>
 <li> `Misc.Feature`, `Fence`, `Pool.QC` </li>
-<li> `Misc.Feature`, `Alley`, `Pool.QC` </li> 
+<li> `Misc.Feature`, `Alley`, `Pool.QC` </li> <!-- This: `Misc.Feature`, `Alley`, `Pool.QC` -->
 <li> `Pool.QC`, `Alley`, `Fence` </li> 
 <li> `Fireplace.Qu`, `Pool.QC`, `Lot.Frontage` </li>
 </ol>
 ```{r Q1}
 # type your code for Question 1 here, and Knit
-
+sum(colSums(is.na(ames_train[, c('Misc.Feature', 'Fence', 'Pool.QC')])))
+sum(colSums(is.na(ames_train[, c('Misc.Feature', 'Alley', 'Pool.QC')])))
+sum(colSums(is.na(ames_train[, c('Pool.QC', 'Alley', 'Fence')])))
+sum(colSums(is.na(ames_train[, c('Fireplace.Qu', 'Pool.QC', 'Lot.Frontage')])))
 ```
 
 \fb{The R function `is.na(x)` will return a boolean that specifies whether x is NA.  The function `colSums` or the package dplyr can help aggregate the total number of missing observations.
@@ -36,7 +41,7 @@ Use frequency tables and bar plots to describe the distribution of a variable.
 
 2. How many categorical variables are coded in R as having type `int`?  Change them to factors when conducting your analysis.
 <ol>
-<li> 0
+<li> 0 <!-- Thsi: 0 -->
 <li> 1
 <li> 2
 <li> 3
@@ -44,7 +49,21 @@ Use frequency tables and bar plots to describe the distribution of a variable.
 
 ```{r Q2}
 # type your code for Question 2 here, and Knit
+ames_train2 <- ames_train[,c("Misc.Feature","Fence", "Pool.QC", "Alley", "Fireplace.Qu", "Lot.Frontage")]
 
+for(name in names(ames_train2)){
+  
+  print(name)
+  type = class(ames_train2[, name])
+  
+  if (type == "integer") {
+    print('  Integer: yes')
+    smry = summary(as.factor(ames_train2[ ,name]))
+    print(str(smry))
+  } else {
+    print('  Integer: no')
+  }
+}
 ```
 
 \fb{Examine the type of each variable using the `summary` or `str` functions.  Are there any variables that are coded as `int` that can only take on a finite number of values (i.e. the magnitude of the number does not matter)?  Count them.
@@ -58,12 +77,17 @@ Identify variables as numerical and categorical.
 <li> `StoneBr`
 <li> `Timber`
 <li> `Veenker`
-<li> `NridgHt`
+<li> `NridgHt` <!-- NridgHt -->
 </ol>
 
 ```{r Q3}
 # type your code for Question 3 here, and Knit
+neibourhoods = c("StoneBr", "Timber", "Veenker", "NridgHt")
 
+ames_train %>%
+    group_by(Neighborhood) %>%
+    filter(Neighborhood %in% neibourhoods) %>%
+    summarise(sd = sd(price))
 ```
 
 \fb{In dplyr, the `group_by` command allows you to calculate quantities for each group using the `summarise` command.  
@@ -77,13 +101,23 @@ When describing the distribution of a numerical variable, mention its shape, cen
 <ol>
 <li> `Lot.Area`
 <li> `Bedroom.AbvGr`
-<li> `Overall.Qual`
+<li> `Overall.Qual` <!-- This: Overall.Qual -->
 <li> `Year.Built`
 </ol>
 
 ```{r Q4}
 # type your code for Question 4 here, and Knit
+v = c('Lot.Area', 'Bedroom.AbvGr', 'Overall.Qual', 'Year.Built')
 
+ggplot(ames_train, aes(x = Lot.Area, y = price)) + geom_point()
+ggplot(ames_train, aes(x = Bedroom.AbvGr, y = price)) + geom_point()
+ggplot(ames_train, aes(x = Overall.Qual, y = price)) + geom_point()
+ggplot(ames_train, aes(x = Year.Built, y = price)) + geom_point()
+
+cor(ames_train$Lot.Area, ames_train$price)
+cor(ames_train$Bedroom.AbvGr, ames_train$price)
+cor(ames_train$Overall.Qual, ames_train$price)
+cor(ames_train$Year.Built, ames_train$price)
 ```
 
 \fb{For each of the listed independent variables, create a scatterplot with the independent variable on the x-axis and `price` on the y-axis.  What seems to be the most linear?
@@ -94,20 +128,26 @@ Use scatterplots for describing the relationship between two numerical variables
 }
 
 
-5. Suppose you are examining the relationship between `price` and `area`.  Which of the following variable transformations makes the relationship appear to be the most linear?
+5. Suppose you are examining the relationship between `price` and `area`. Which of the following variable transformations makes the relationship appear to be the most linear?
 <ol>
 <li> Do not transform either `price` or `area`
 <li> Log-transform `price` but not `area`
 <li> Log-transform `area` but not `price`
-<li> Log-transform both `price` and `area`
+<li> Log-transform both `price` and `area` <!-- This: Both -->
 </ol>
 
 ```{r Q5}
 # type your code for Question 5 here, and Knit
+ggplot(ames_train, aes(x = area, y = price)) + geom_point()
 
+ggplot(ames_train, aes(x = area, y = log(price))) + geom_point()
+
+ggplot(ames_train, aes(x = log(area), y = price)) + geom_point()
+
+ggplot(ames_train, aes(x = log(area), y = log(price))) + geom_point()
 ```
 
-\fb{For each of the four options, visualize the relationship using a graphical device such as a scatterplot.  What seems to be the most linear?
+\fb{For each of the four options, visualize the relationship using a graphical device such as a scatterplot.What seems to be the most linear?
 
 This question refers to the following learning objective(s):
 Recognize when transformations (e.g. log) can make the distribution of data more symmetric, and hence easier to model.
@@ -115,17 +155,20 @@ Use scatterplots for describing the relationship between two numerical variables
 }
 
 
-6. Suppose that your prior for the proportion of houses that have at least one garage is Beta(9, 1).  What is your posterior? Assume a beta-binomial model for this proportion.
+6. Suppose that your prior for the proportion of houses that have at least one garage is Beta(9, 1). What is your posterior? Assume a beta-binomial model for this proportion.
 <ol>
 <li> Beta(954, 46)
 <li> Beta(963, 46)
 <li> Beta(954, 47)
-<li> Beta(963, 47)
+<li> Beta(963, 47) <!-- This: Beta(963, 47) -->
 </ol>
 
 ```{r Q6}
 # type your code for Question 6 here, and Knit
-
+x = count(ames_train %>% filter(!is.na(Garage.Type)))
+n = count(ames_train)
+print(paste(x, n))
+# Beta(9 + 954, 1 + 1000 - 954)
 ```
 
 \fb{Recall that if the prior is $Beta(\alpha,\beta)$, then the posterior with $x$ successes in $n trials$ is $Beta(\alpha+x,\beta+n-x)$.
@@ -139,13 +182,18 @@ Make inferences about a proportion using a conjugate Beta prior:
 <ol>
 <li> Over 30 percent of houses were built after the year 1999.
 <li> The median housing price is greater than the mean housing price.
-<li> 21 houses do not have a basement.
+<li> 21 houses do not have a basement. <!-- This: 21 no basement -->
 <li> 4 houses are located on gravel streets.
 </ol>
 
 ```{r Q7}
 # type your code for Question 7 here, and Knit
-
+first = count(ames_train %>% filter(Year.Built > 1999)) / count(ames_train)
+second = summary(ames_train$price)
+third = count(ames_train %>% filter(is.na(Bsmt.Qual)))
+print(first)
+print(second)
+print(third)
 ```
 
 \fb{For each of the statements, determine whether it is true or false by using functions such as `summary`, `sum`, or `median` to describe the distribution of a relevant variable.
@@ -156,7 +204,7 @@ Describe the distribution of a single variable.
 
 8. Test, at the $\alpha = 0.05$ level, whether homes with a garage have larger square footage than those without a garage.
 <ol>
-<li> With a p-value near 0.000, we reject the null hypothesis of no difference.
+<li> With a p-value near 0.000, we reject the null hypothesis of no difference. <!-- This: p-value == 5.773316e-06  -->
 <li> With a p-value of approximately 0.032, we reject the null hypothesis of no difference.
 <li> With a p-value of approximately 0.135, we fail to reject the null hypothesis of no difference.
 <li> With a p-value of approximately 0.343, we fail to reject the null hypothesis of no difference.
@@ -164,17 +212,41 @@ Describe the distribution of a single variable.
 
 ```{r Q8}
 # type your code for Question 8 here, and Knit
+with = ames_train %>% filter(!is.na(Garage.Type))
+without = ames_train %>% filter(is.na(Garage.Type))
 
+with_mean = mean(with$area)
+without_mean = mean(without$area)
+with_sd = sd(with$area)
+without_sd = sd(without$area)
+
+print(paste(with_mean, without_mean, with_sd, without_sd))
+
+# H0: µ1 - µ2 = 0
+# Ha: µ1 - µ2 != 0
+
+pooled_SE = sqrt( (with_sd^2 / count(with)) + (without_sd^2 / count(without)) )
+df = min( count(with) - 1, count(without) -1 )
+
+#print(pooled_SE)
+
+T_score = ((with_mean - without_mean) - 0) / pooled_SE
+
+#print(T_score$n)
+#print(df)
+
+p_value = 2*pt(T_score$n, df = df, lower.tail = FALSE)
+
+print(p_value)
 ```
 
-\fb{Use a hypothesis test to compare two means.  Use a pooled standard error to estimate the p-value. 
+\fb{Use a hypothesis test to compare two means. Use a pooled standard error to estimate the p-value. 
 
 This question refers to the following learning objective(s):
 Use the t-distribution for inference on a single mean, difference of paired (dependent) means, and difference of independent means.
 }
 
-
-9. For homes with square footage greater than 2000, assume that the number of bedrooms above ground follows a Poisson distribution with rate $\lambda$.  Your prior on $\lambda$ follows a Gamma distribution with mean 3 and standard deviation 1.  What is your posterior mean and standard deviation for the average number of bedrooms in houses with square footage greater than 2000 square feet?
+9. For homes with square footage greater than 2000, assume that the number of bedrooms above ground follows a Poisson distribution with rate $\lambda$. Your prior on $\lambda$ follows a Gamma distribution with mean 3 and standard deviation 1.  What is your posterior mean and standard deviation for the average number of bedrooms in houses with square footage greater than 2000 square feet?
 <ol> 
 <li> Mean: 3.61, SD: 0.11
 <li> Mean: 3.62, SD: 0.16
@@ -184,7 +256,10 @@ Use the t-distribution for inference on a single mean, difference of paired (dep
 
 ```{r Q9}
 # type your code for Question 9 here, and Knit
+greater = ames_train %>% filter(area > 2000)
 
+# Gamma(3, 1)
+View(greater)
 ```
 
 \fb{Since the Gamma distribution is conjugate to the Poisson distribution, the posterior will be Gamma with parameter value  $k + \sum x_i$ and $\theta/(n\theta+1)$, where $k$ and $\theta$ represent the parameters of the prior distribution.  Based on the prior mean and standard deviation, elicit the prior values of $k$ and $\theta$.
